@@ -163,5 +163,5 @@ head' (x : _) = x
 ```
 
 ## Releases
-- v0.0.1 (2016-12-06)
+- v0.0.4 (2016-12-06)
   - Initial release

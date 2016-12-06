@@ -2,7 +2,7 @@ name := "sbt-haskell"
 
 organization := "com.github.dnvriend"
 
-version := "0.0.1"
+version := "0.0.2"
 
 scalaVersion := "2.10.6"
 
@@ -29,25 +29,13 @@ headers := Map(
 // enable publishing to jcenter
 homepage := Some(url("https://github.com/dnvriend/sbt-haskell"))
 
-pomIncludeRepository := (_ => false)
-
-pomExtra := <scm>
-  <url>https://github.com/dnvriend/sbt-haskell</url>
-  <connection>scm:git@github.com:dnvriend/sbt-haskell.git</connection>
-</scm>
-  <developers>
-    <developer>
-      <id>dnvriend</id>
-      <name>Dennis Vriend</name>
-      <url>https://github.com/dnvriend</url>
-    </developer>
-  </developers>
-
-publishMavenStyle := true
+publishMavenStyle := false
 
 sbtPlugin := true
 
 bintrayRepository := "sbt-plugins"
+
+bintrayReleaseOnPublish := false
 
 bintrayPackageLabels := Seq("haskell", "sbt", "compile", "test")
 
@@ -57,6 +45,6 @@ bintrayPackageAttributes ~=
     "github_repo" -> Seq(bintry.Attr.String("https://github.com/dnvriend/sbt-haskell.git")),
     "issue_tracker_url" -> Seq(bintry.Attr.String("https://github.com/dnvriend/sbt-haskell/issues/"))
   )
-    )
+)
 
-enablePlugins(AutomateHeaderPlugin, SbtScalariform)
+enablePlugins(AutomateHeaderPlugin, SbtScalariform, BintrayPlugin)

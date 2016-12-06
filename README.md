@@ -17,8 +17,15 @@ To recap, this plugin is for studying purposes only and to have a familiar workf
 You should use sbt v0.13.13 or higher and put the following in your `plugins.sbt` file:
 
 ```scala
+resolvers += Resolver.url(
+  "bintray-dnvriend-ivy-sbt-plugins",
+  url("http://dl.bintray.com/dnvriend/sbt-plugins"))(
+  Resolver.ivyStylePatterns)
+
 addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.1")
 ```
+
+__Note:__ Don't forget to add the resolver!
 
 ## Usage
 - Install the [IntelliJ plugin for Haskell](https://plugins.jetbrains.com/plugin/7453)

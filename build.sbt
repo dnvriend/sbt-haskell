@@ -2,7 +2,7 @@ name := "sbt-haskell"
 
 organization := "com.github.dnvriend"
 
-version := "0.0.2"
+version := "0.0.4"
 
 scalaVersion := "2.10.6"
 
@@ -35,16 +35,6 @@ sbtPlugin := true
 
 bintrayRepository := "sbt-plugins"
 
-bintrayReleaseOnPublish := false
-
-bintrayPackageLabels := Seq("haskell", "sbt", "compile", "test")
-
-bintrayPackageAttributes ~=
-  (_ ++ Map(
-    "website_url" -> Seq(bintry.Attr.String("https://github.com/dnvriend/sbt-haskell")),
-    "github_repo" -> Seq(bintry.Attr.String("https://github.com/dnvriend/sbt-haskell.git")),
-    "issue_tracker_url" -> Seq(bintry.Attr.String("https://github.com/dnvriend/sbt-haskell/issues/"))
-  )
-)
+bintrayReleaseOnPublish := true
 
 enablePlugins(AutomateHeaderPlugin, SbtScalariform, BintrayPlugin)

@@ -2,11 +2,16 @@ name := "sbt-haskell"
 
 organization := "com.github.dnvriend"
 
-version := "0.0.4"
+version := "0.0.5-SNAPSHOT"
 
 scalaVersion := "2.10.6"
 
 licenses +=("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php"))
+
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.8"
+libraryDependencies += "org.apache.commons" % "commons-compress" % "1.12"
+libraryDependencies += "org.typelevel" %% "scalaz-scalatest" % "1.1.0" % Test
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
 
 // enable scala code formatting //
 import scalariform.formatter.preferences._

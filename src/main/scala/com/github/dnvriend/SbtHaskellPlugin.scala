@@ -16,19 +16,19 @@
 
 package com.github.dnvriend
 
-import java.io.{ FileInputStream, InputStream }
-import java.util.zip.GZIPInputStream
+import java.io.InputStream
 
+import com.github.dnvriend.FastParseImplicits._
+import fastparse.all._
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.archivers.tar.{ TarArchiveEntry, TarArchiveInputStream }
 import org.apache.commons.compress.utils.IOUtils
+import sbt.Keys._
 import sbt._
-import sbt.Keys.{ version, _ }
 
-import scala.util.matching.Regex
 import scala.util.{ Failure, Try }
-import scalaz._
 import scalaz.Scalaz._
+import scalaz._
 
 object SbtHaskellPlugin extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
@@ -112,12 +112,13 @@ object Util {
 
 object Hackage {
   def validateHaskellPackage(input: String): ValidationNel[String, Hackage] = {
-    val HaskellPackagePattern = s"""([\\w]*)-([\\w\\.]*)""".r
-    Validation.fromTryCatchThrowable[Hackage, Throwable] {
-      input match {
-        case HaskellPackagePattern(packageName, packageVersion) => Hackage(packageName, packageVersion)
-      }
-    }.leftMap(ex => s"haskellPackage '$input' is invalid; error: ${ex.getMessage}".wrapNel)
+    def keepHackage(prod: (Hackage, Int)): Hackage = prod._1
+    val hackagePackage = CharIn('a' to 'z', 'A' to 'Z', '0' to '9', ".")
+    val hackageVersion = CharIn('0' to '9', ".")
+    val hackageParser: Parser[Hackage] = P(hackagePackage.rep.! ~ "-" ~ hackageVersion.rep.! ~ End).map {
+      case (packageName, version) => Hackage(packageName, version)
+    }
+    hackageParser.parse(input).validation.keepType
   }
 
   def packageUrl(packageName: String, version: String)(implicit log: Logger): Disjunction[String, URL] = {
@@ -285,8 +286,8 @@ final case class Hackage(packageName: String, version: String)
 
 object HaskellCompiler {
 
-  import Util._
   import SbtHaskellPlugin.autoImport._
+  import Util._
 
   def compile() = Def.task {
     implicit val log: Logger = streams.value.log
@@ -310,8 +311,8 @@ object HaskellCompiler {
 
 object HaskellRunner {
 
-  import Util._
   import SbtHaskellPlugin.autoImport._
+  import Util._
 
   def run() = Def.task {
     implicit val log: Logger = streams.value.log

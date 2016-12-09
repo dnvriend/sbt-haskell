@@ -22,7 +22,7 @@ resolvers += Resolver.url(
   url("http://dl.bintray.com/dnvriend/sbt-plugins"))(
   Resolver.ivyStylePatterns)
 
-addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.4")
+addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.6")
 ```
 
 __Note:__ Don't forget to add the resolver!
@@ -52,11 +52,11 @@ val haskellOutputDir: SettingKey[File] = settingKey[File]("'-outputdir ⟨dir⟩
 ## Available tasks
 The available tasks are
 
-```scala
-val haskellCompile: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("compile haskell files")
-val haskellRun: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("Run haskell program")
-val haskellTest: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("alias for ';clean;haskellCompile;haskellRun'")
-```
+- __haskellCompile__: compile haskell files
+- __haskellRun__: run the `Main.hs` haskell program
+- __haskellTest__: alias for ';clean;haskellCompile;haskellRun'
+- __run__: alias for haskellRun
+- __test__: alias for haskellTest which is an alias for ';clean;haskellCompile;haskellRun'
 
 ## Installing Haskell
 I successfully installed Haskell using [brew](http://brew.sh/), so if you don't have brew installed yet, click on the
@@ -163,5 +163,8 @@ head' (x : _) = x
 ```
 
 ## Releases
+- v0.0.6 (2016-12-09)
+  - run and test tasks
+
 - v0.0.4 (2016-12-06)
   - Initial release

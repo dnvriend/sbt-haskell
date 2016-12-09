@@ -39,15 +39,15 @@ object SbtHaskellPlugin extends AutoPlugin {
     val haskellExecutableName: SettingKey[String] = settingKey[String]("set the executable haskell file name; defaults to the project name and will be saved in 'target/haskell'")
     val haskellVerbosityLevel: SettingKey[Int] = settingKey[Int]("set verbosity level [1..3]; defaults to 1, can be changed by typing 'set haskellVerbosityLevel := 3'")
     val haskellCompilerCommand: SettingKey[String] = settingKey[String]("ghc")
-    val haskellSource: SettingKey[File] = settingKey[File]("The haskell source dir")
-    val haskellTargetDir: SettingKey[File] = settingKey[File]("The haskell target dir; defaults to 'target/haskell'")
-    val haskellDownloadDir: SettingKey[File] = settingKey[File]("The haskell download dir; defaults to 'target/haskell/download'")
+    val haskellSource: SettingKey[File] = settingKey[File]("the haskell source dir")
+    val haskellTargetDir: SettingKey[File] = settingKey[File]("the haskell target dir; defaults to 'target/haskell'")
+    val haskellDownloadDir: SettingKey[File] = settingKey[File]("the haskell download dir; defaults to 'target/haskell/download'")
     val haskellOutputDir: SettingKey[File] = settingKey[File]("'-outputdir ⟨dir⟩': set output directory; defaults to 'target/haskell/output'")
     val haskellCompile: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("compile haskell files")
-    val haskellRun: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("Run haskell program")
+    val haskellRun: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("run the `Main.hs` haskell program")
     val haskellTest: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("alias for ';clean;haskellCompile;haskellRun'")
-    val haskellPackages: SettingKey[Seq[String]] = settingKey[Seq[String]]("""List of Haskell packages to download from Hackage and extract to your haskellSource directory, the format should be Seq("name:version") so for example Seq("adjunctions:4.3"); defaults to Seq.empty[String]""")
-    val haskellDownload: TaskKey[Disjunction[String, List[File]]] = taskKey[Disjunction[String, List[File]]]("Download the haskellPackages")
+    val haskellPackages: SettingKey[Seq[String]] = settingKey[Seq[String]]("""list of Haskell packages to download from Hackage and extract to your haskellSource directory, the format should be Seq("name:version") so for example Seq("adjunctions:4.3"); defaults to Seq.empty[String]""")
+    val haskellDownload: TaskKey[Disjunction[String, List[File]]] = taskKey[Disjunction[String, List[File]]]("(experimental) - download the haskellPackages")
   }
 
   import autoImport._

@@ -23,8 +23,8 @@ import fastparse.all._
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.archivers.tar.{ TarArchiveEntry, TarArchiveInputStream }
 import org.apache.commons.compress.utils.IOUtils
-import sbt.Keys._
-import sbt._
+import sbt.Keys.{ run, _ }
+import sbt.{ inputKey, _ }
 
 import scala.util.{ Failure, Try }
 import scalaz.Scalaz._
@@ -57,17 +57,19 @@ object SbtHaskellPlugin extends AutoPlugin {
     haskellExecutableName := name.value,
     haskellCompilerCommand := "ghc",
     haskellSource := baseDirectory.value / "src" / "main" / "haskell",
-    watchSources += haskellSource.value,
-    pollInterval := 500,
     haskellTargetDir := target.value / "haskell",
     haskellOutputDir := haskellTargetDir.value / "output",
-    unmanagedSourceDirectories in Compile += haskellSource.value,
     haskellCompile := HaskellCompiler.compile().value,
     haskellRun := HaskellRunner.run().value,
     haskellTest := Def.sequential(clean, haskellCompile, haskellRun).value,
     haskellPackages := Seq.empty[String],
     haskellDownloadDir := haskellTargetDir.value / "download",
-    haskellDownload := Hackage.validateAndDownload().value
+    haskellDownload := Hackage.validateAndDownload().value,
+    Keys.run := haskellRun.value,
+    Keys.test := haskellTest.value,
+    Keys.watchSources += haskellSource.value,
+    Keys.pollInterval := 500,
+    Keys.unmanagedSourceDirectories in Compile += haskellSource.value
   )
 
   override def projectSettings: Seq[Setting[_]] =

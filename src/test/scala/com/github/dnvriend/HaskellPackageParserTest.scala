@@ -23,13 +23,14 @@ import fastparse.parsers.Intrinsics.ElemIn
 // see: https://www.tutorialspoint.com/scala/scala_regular_expressions.htm
 class HaskellPackageParserTest extends TestSpec {
   it should "parse packageName and version using regex" in {
-    Hackage.validateHaskellPackage("algebraic-0.1.0.2") should beSuccess(Hackage("algebraic", "0.1.0.2"))
+    Hackage.validateHaskellPackage("algebraic:0.1.0.2") should beSuccess(Hackage("algebraic", "0.1.0.2"))
+    Hackage.validateHaskellPackage("data-lens:2.11.1") should beSuccess(Hackage("data-lens", "2.11.1"))
   }
 
   it should "parse packageName and version using Fastparse Parser/Combinator" in {
-    val hackagePackage: ElemIn[Char, String] = CharIn('a' to 'z', 'A' to 'Z', ".")
+    val hackagePackage: ElemIn[Char, String] = CharIn('a' to 'z', 'A' to 'Z', "-")
     val hackageVersion: ElemIn[Char, String] = CharIn('0' to '9', ".")
-    val hackageParser: Parser[(String, String)] = P(hackagePackage.rep.! ~ "-" ~ hackageVersion.rep.! ~ End)
-    hackageParser.parse("pretty-1.1.3.4").validation should beSuccess((("pretty", "1.1.3.4"), 14))
+    val hackageParser: Parser[(String, String)] = P(hackagePackage.rep.! ~ ":" ~ hackageVersion.rep.! ~ End)
+    hackageParser.parse("data-lens:2.11.1").validation should beSuccess((("data-lens", "2.11.1"), 16))
   }
 }

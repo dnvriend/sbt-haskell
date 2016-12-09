@@ -23,8 +23,8 @@ import fastparse.all._
 import org.apache.commons.compress.archivers.ArchiveStreamFactory
 import org.apache.commons.compress.archivers.tar.{ TarArchiveEntry, TarArchiveInputStream }
 import org.apache.commons.compress.utils.IOUtils
-import sbt.Keys.{ run, _ }
-import sbt.{ inputKey, _ }
+import sbt.Keys._
+import sbt._
 
 import scala.util.{ Failure, Try }
 import scalaz.Scalaz._
@@ -114,10 +114,9 @@ object Util {
 
 object Hackage {
   def validateHaskellPackage(input: String): ValidationNel[String, Hackage] = {
-    def keepHackage(prod: (Hackage, Int)): Hackage = prod._1
-    val hackagePackage = CharIn('a' to 'z', 'A' to 'Z', '0' to '9', ".")
+    val hackagePackage = CharIn('a' to 'z', 'A' to 'Z', "-")
     val hackageVersion = CharIn('0' to '9', ".")
-    val hackageParser: Parser[Hackage] = P(hackagePackage.rep.! ~ "-" ~ hackageVersion.rep.! ~ End).map {
+    val hackageParser: Parser[Hackage] = P(hackagePackage.rep.! ~ ":" ~ hackageVersion.rep.! ~ End).map {
       case (packageName, version) => Hackage(packageName, version)
     }
     hackageParser.parse(input).validation.keepType

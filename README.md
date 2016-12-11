@@ -22,7 +22,7 @@ resolvers += Resolver.url(
   url("http://dl.bintray.com/dnvriend/sbt-plugins"))(
   Resolver.ivyStylePatterns)
 
-addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.6")
+addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.7")
 ```
 
 __Note:__ Don't forget to add the resolver!
@@ -47,6 +47,7 @@ val haskellCompilerCommand: SettingKey[String] = settingKey[String]("ghc")
 val haskellSource: SettingKey[File] = settingKey[File]("The haskell source dir")
 val haskellTargetDir: SettingKey[File] = settingKey[File]("The haskell target dir; defaults to 'target/haskell'")
 val haskellOutputDir: SettingKey[File] = settingKey[File]("'-outputdir ⟨dir⟩': set output directory; defaults to 'target/haskell/output'")
+val cabalPackages: SettingKey[Seq[String]] = settingKey[Seq[String]]("""list of Haskell packages to put on the library path, the format should be Seq("name-version") so for example Seq("adjunctions-4.3"); defaults to Seq.empty[String]""")
 ```
 
 ## Available tasks
@@ -57,6 +58,8 @@ The available tasks are
 - __haskellTest__: alias for ';clean;haskellCompile;haskellRun'
 - __run__: alias for haskellRun
 - __test__: alias for haskellTest which is an alias for ';clean;haskellCompile;haskellRun'
+- __cabalUpdate__: download the latest package list from 'hackage.haskell.org'
+- __cabalInstall__: download and install packages from Hackage defined in the settingKey 'cabalPackages'
 
 ## Installing Haskell
 I successfully installed Haskell using [brew](http://brew.sh/), so if you don't have brew installed yet, click on the

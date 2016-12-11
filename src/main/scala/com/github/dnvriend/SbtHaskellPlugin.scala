@@ -16,19 +16,12 @@
 
 package com.github.dnvriend
 
-import java.io.InputStream
-
-import com.github.dnvriend.FastParseImplicits._
-import fastparse.all._
-import org.apache.commons.compress.archivers.ArchiveStreamFactory
-import org.apache.commons.compress.archivers.tar.{ TarArchiveEntry, TarArchiveInputStream }
-import org.apache.commons.compress.utils.IOUtils
 import sbt.Keys._
 import sbt._
 
 import scala.util.{ Failure, Try }
-import scalaz.Scalaz._
 import scalaz._
+import Scalaz._
 
 object SbtHaskellPlugin extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
@@ -46,8 +39,10 @@ object SbtHaskellPlugin extends AutoPlugin {
     val haskellCompile: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("compile haskell files")
     val haskellRun: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("run the `Main.hs` haskell program")
     val haskellTest: TaskKey[Try[Unit]] = taskKey[Try[Unit]]("alias for ';clean;haskellCompile;haskellRun'")
-    val haskellPackages: SettingKey[Seq[String]] = settingKey[Seq[String]]("""list of Haskell packages to download from Hackage and extract to your haskellSource directory, the format should be Seq("name:version") so for example Seq("adjunctions:4.3"); defaults to Seq.empty[String]""")
     val haskellDownload: TaskKey[Disjunction[String, List[File]]] = taskKey[Disjunction[String, List[File]]]("(experimental) - download the haskellPackages")
+    val cabalUpdate: TaskKey[Unit] = taskKey[Unit]("download the latest package list from 'hackage.haskell.org'")
+    val cabalInstall: TaskKey[Unit] = taskKey[Unit]("download and install packages from Hackage defined in the settingKey 'cabalPackages'")
+    val cabalPackages: SettingKey[Seq[String]] = settingKey[Seq[String]]("""list of Haskell packages to put on the library path, the format should be Seq("name-version") so for example Seq("adjunctions-4.3"); defaults to Seq.empty[String]""")
   }
 
   import autoImport._
@@ -62,9 +57,15 @@ object SbtHaskellPlugin extends AutoPlugin {
     haskellCompile := HaskellCompiler.compile().value,
     haskellRun := HaskellRunner.run().value,
     haskellTest := Def.sequential(clean, haskellCompile, haskellRun).value,
-    haskellPackages := Seq.empty[String],
-    haskellDownloadDir := haskellTargetDir.value / "download",
-    haskellDownload := Hackage.validateAndDownload().value,
+    cabalUpdate := "cabal update".!,
+    cabalInstall := {
+      val log = streams.value.log
+      val packages = cabalPackages.value.toList.mkString(" ")
+      val cmd = s"cabal install $packages"
+      log.info(s"Executing command: '$cmd'")
+      cmd.!
+    },
+    cabalPackages := Seq.empty[String],
     Keys.run := haskellRun.value,
     Keys.test := haskellTest.value,
     Keys.watchSources += haskellSource.value,
@@ -112,179 +113,6 @@ object Util {
   }
 }
 
-object Hackage {
-  def validateHaskellPackage(input: String): ValidationNel[String, Hackage] = {
-    val hackagePackage = CharIn('a' to 'z', 'A' to 'Z', "-")
-    val hackageVersion = CharIn('0' to '9', ".")
-    val hackageParser: Parser[Hackage] = P(hackagePackage.rep.! ~ ":" ~ hackageVersion.rep.! ~ End).map {
-      case (packageName, version) => Hackage(packageName, version)
-    }
-    hackageParser.parse(input).validation.keepType
-  }
-
-  def packageUrl(packageName: String, version: String)(implicit log: Logger): Disjunction[String, URL] = {
-    val urlAsString = s"http://hackage.haskell.org/package/$packageName-$version/$packageName-$version.tar.gz"
-    Disjunction.fromTryCatchNonFatal {
-      url(urlAsString)
-    }.leftMap(ex => s"Could not create URL from for URL: '$urlAsString', error: $ex")
-  }
-
-  def descriptionUrl(packageName: String, version: String)(implicit log: Logger): Disjunction[String, URL] = {
-    val urlAsString = s"http://hackage.haskell.org/package/$packageName-$version/$packageName.cabal"
-    Disjunction.fromTryCatchNonFatal {
-      url(urlAsString)
-    }.leftMap(ex => s"Could not create descriptionUrl for URL: '$urlAsString', error: $ex")
-  }
-
-  def downloadDescription(descriptionUrl: URL, toDir: File): Disjunction[String, File] = Disjunction.fromTryCatchNonFatal {
-    IO.download(descriptionUrl, toDir)
-    toDir
-  }.leftMap(ex => s"Could not download description: $ex")
-
-  def download(url: URL, toFile: File)(implicit log: Logger): Disjunction[String, File] = Disjunction.fromTryCatchNonFatal {
-    IO.download(url, toFile)
-    log.info(s"Downloaded from url: '$url' to file: '${toFile.absolutePath}'")
-    toFile
-  }.leftMap(ex => s"Could not download library from url $url to file ${toFile.absolutePath}; error: ${ex.getMessage}")
-
-  def unzip(downloaded: File, toFile: File): Disjunction[String, File] = Disjunction.fromTryCatchNonFatal {
-    IO.gunzip(downloaded, toFile)
-    toFile
-  }.leftMap(ex => s"Error unzipping '${downloaded.absolutePath}': ${ex.getMessage}")
-
-  object TarInputStreamIterator {
-    def apply(is: TarArchiveInputStream): TarInputStreamIterator =
-      new TarInputStreamIterator(is)
-
-    def tarArchiveInputStream(is: InputStream): TarArchiveInputStream =
-      new ArchiveStreamFactory().createArchiveInputStream("tar", is).asInstanceOf[TarArchiveInputStream]
-  }
-
-  class TarInputStreamIterator(is: TarArchiveInputStream) extends Iterator[TarArchiveEntry] {
-    var buffer: Option[TarArchiveEntry] = none
-    def none = Option.empty[TarArchiveEntry]
-    def some(entry: TarArchiveEntry) = Option(entry)
-    override def hasNext: Boolean = {
-      buffer = Try(Option(is.getNextTarEntry)).toOption.flatten
-      buffer.isDefined
-    }
-    override def next(): TarArchiveEntry = buffer.get
-  }
-
-  def blackListed(entry: TarArchiveEntry, hackage: Hackage): Boolean = {
-    val hackageFileName = s"${hackage.packageName}-${hackage.version}/"
-    Option(entry).exists(_.getName.toLowerCase.endsWith(".cabal")) ||
-      Option(entry).exists(_.getName.toLowerCase.endsWith(".md")) ||
-      Option(entry).exists(_.getName.toLowerCase.contains("license")) ||
-      Option(entry).exists(_.getName.toLowerCase.contains("setup.hs")) ||
-      Option(entry).exists(entry => entry.getName == hackageFileName && entry.isDirectory) ||
-      Option(entry).exists(entry => entry.getName.contains("tests") && entry.isDirectory)
-  }
-
-  def extract(tar: File, toDir: File, hackage: Hackage, sourceDirs: List[String])(implicit log: Logger): Disjunction[String, List[File]] = Disjunction.fromTryCatchNonFatal {
-    val hackageFileName = if (sourceDirs.isEmpty) {
-      s"${hackage.packageName}-${hackage.version}"
-    } else {
-      s"${hackage.packageName}-${hackage.version}/${sourceDirs.head}"
-    }
-
-    def entryName(entry: TarArchiveEntry) = {
-      val oldName = entry.getName
-      oldName.substring(hackageFileName.length)
-    }
-    def directoryFromEntry(entry: TarArchiveEntry): File = file(s"${toDir.absolutePath}/${entryName(entry)}")
-    def fileFromEntry(entry: TarArchiveEntry): File = file(s"${toDir.absolutePath}/${entryName(entry)}")
-    var processedFiles: List[File] = List.empty[File]
-    Using.fileInputStream(tar) { is =>
-      val tais = TarInputStreamIterator.tarArchiveInputStream(is)
-      TarInputStreamIterator(tais)
-        .foreach {
-          case entry if blackListed(entry, hackage) =>
-            log.info(s"Skipping entry: ${entry.getName}")
-          case entry if entry.isDirectory =>
-            log.info(s"Creating directory: ${directoryFromEntry(entry).absolutePath}")
-            IO.createDirectory(directoryFromEntry(entry))
-          case entry =>
-            val fileToCreate = fileFromEntry(entry)
-            log.info(s"Creating file: ${fileToCreate.absolutePath}")
-            Using.fileOutputStream()(fileToCreate) { out =>
-              IOUtils.copy(tais, out)
-            }
-            processedFiles = processedFiles :+ fileToCreate
-        }
-    }
-    processedFiles
-  }.leftMap { ex =>
-    ex.printStackTrace()
-    s"Error extracting ${tar.absolutePath} to dir: ${toDir.absolutePath}"
-  }
-
-  def determineSourceDirs(descriptionFile: File): Disjunction[String, List[String]] = Disjunction.fromTryCatchNonFatal {
-    IO.read(descriptionFile)
-      .split("\n")
-      .map(_.trim)
-      .filter(line => line.startsWith("hs-source-dirs") || line.startsWith("hs-source-dir") || line.startsWith("Hs-Source-Dirs"))
-      .flatMap(_.split(":").drop(1).headOption.map(_.trim).filter(_.nonEmpty))
-      .toList
-  }.leftMap(ex => s"$ex")
-
-  def downloadHackage(hackage: Hackage, sourceDir: File, downloadDir: File)(implicit log: Logger): Disjunction[String, List[File]] = {
-    val tgzName = new File(s"${downloadDir.absolutePath}/${hackage.packageName}-${hackage.version}.tgz")
-    val tarName = new File(s"${downloadDir.absolutePath}/${hackage.packageName}-${hackage.version}.tar")
-    val descriptionFile = new File(s"${downloadDir.absolutePath}/${hackage.packageName}.cabal")
-    for {
-      packageUrl <- packageUrl(hackage.packageName, hackage.version)
-      descriptionUrl <- descriptionUrl(hackage.packageName, hackage.version)
-      _ <- Disjunction.fromTryCatchNonFatal(IO.createDirectory(downloadDir)).leftMap(ex => s"$ex")
-      description <- downloadDescription(descriptionUrl, descriptionFile)
-      sourceDirs <- determineSourceDirs(description)
-      downloaded <- download(packageUrl, tgzName)
-      upzipped <- unzip(downloaded, tarName)
-      processedFiles <- extract(tarName, sourceDir, hackage, sourceDirs)
-    } yield processedFiles
-  }
-
-  def downloadListOfHackageResources(listOfHackageResources: List[Hackage], sourceDir: File, downloadDir: File)(implicit log: Logger): Disjunction[String, List[File]] = {
-    def loop(jobs: List[Hackage], acc: List[Disjunction[String, List[File]]]): List[Disjunction[String, List[File]]] =
-      if (jobs.isEmpty) acc else loop(jobs.tail, downloadHackage(jobs.head, sourceDir, downloadDir) +: acc)
-
-    loop(listOfHackageResources, List.empty[Disjunction[String, List[File]]])
-      .sequenceU
-      .rightMap(_.flatten)
-  }
-
-  def validateAndDownload() = Def.task {
-    import SbtHaskellPlugin.autoImport._
-    implicit val log: Logger = streams.value.log
-    val sourceDir: File = haskellSource.value
-    val downloadDir: File = haskellDownloadDir.value
-    val listOfHaskellPackages: Seq[String] = haskellPackages.value
-    val listOfValidatedHackageResources: ValidationNel[String, List[Hackage]] =
-      listOfHaskellPackages.toList.traverseU(Hackage.validateHaskellPackage)
-
-    val result: Disjunction[String, List[File]] = for {
-      listOfHackageResources <- listOfValidatedHackageResources.disjunction.leftMap(_.toList.mkString(","))
-      downloadedFiles <- downloadListOfHackageResources(listOfHackageResources, sourceDir, downloadDir)
-    } yield downloadedFiles
-
-    result match {
-      case DLeft(errors) =>
-        log.info(s"Errors while downloading Haskell Packages: $errors")
-      case DRight(_) if listOfHaskellPackages.isEmpty =>
-        log.info("No Haskell packages configured to download")
-      case DRight(files) if files.isEmpty =>
-        log.info("No Haskell packages downloaded")
-      case DRight(files) =>
-        val xs = files.map(_.absolutePath)
-        log.info(s"Successfully downloaded Haskell packages containing the following files: $xs")
-    }
-
-    result
-  }
-}
-
-final case class Hackage(packageName: String, version: String)
-
 object HaskellCompiler {
 
   import SbtHaskellPlugin.autoImport._
@@ -300,7 +128,8 @@ object HaskellCompiler {
     val executableName: String = haskellExecutableName.value
     val fullPathExecutable: String = s"""${targetDir.getAbsolutePath}/$executableName"""
     val listOfSourceFilesToCompile: List[String] = listFiles(sourceDir).map(_.getAbsolutePath)
-    val cmd: String = s"""$compilerCommand -v$verbosityLevel -outputdir $outputDir ${listOfSourceFilesToCompile.mkString(" ")} -o $fullPathExecutable"""
+    val packages: String = cabalPackages.value.toList.map(name => s"-package $name").mkString(" ")
+    val cmd: String = s"""$compilerCommand -v$verbosityLevel -outputdir $outputDir ${listOfSourceFilesToCompile.mkString(" ")} $packages -o $fullPathExecutable"""
 
     for {
       _ <- createDirs(targetDir, outputDir)

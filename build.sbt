@@ -2,7 +2,7 @@ name := "sbt-haskell"
 
 organization := "com.github.dnvriend"
 
-version := "0.0.7-SNAPSHOT"
+version := "0.0.7"
 
 scalaVersion := "2.10.6"
 

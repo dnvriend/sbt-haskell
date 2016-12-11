@@ -166,6 +166,9 @@ head' (x : _) = x
 ```
 
 ## Releases
+- v0.0.7 (2016-12-11)
+  - Cabal integration
+
 - v0.0.6 (2016-12-09)
   - run and test tasks
 

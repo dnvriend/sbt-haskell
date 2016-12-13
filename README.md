@@ -4,10 +4,12 @@ A very simple sbt plugin for compiling and running haskell programs using sbt.
 ## Introduction
 I want to learn Haskell the language and am not (yet) interested in the Haskell build infrastructure. As I know
 Sbt and Scala (a little) I have created this very simple plugin that watches Haskell source files put in
-`src/main/haskell`, compiles them using ghc that you must install on your system and puts the object files
-in `target/haskell/output` and puts the executable in `target/haskell`. It will also run the Haskell executable.
+`src/main/haskell` and Haskell test files in `src/test/haskell`, compiles them using ghc that you must
+installed on your system (read [Installing Haskell] further down) using the `compile` task and
+test your project using the `test` task. The plugin will put object files in `target/haskell/output` and
+the executable in `target/haskell`. It will also run the Haskell executable using the `run` task.
 
-The plugin is great for studying Haskell using the workflow you already know so using SBT with the `~haskellTest` task
+The plugin is great for studying Haskell using the workflow you already know so using SBT with the `~test` task
 and using IntelliJ IDEA with the [official Haskell Language support plugin from Jetbrains v0.5.2](https://plugins.jetbrains.com/plugin/7453)
 which gives your syntax highlighting and more really feels familiar.
 
@@ -85,101 +87,49 @@ brew link ghc
 brew link --overwrite ghc
 cabal update
 cabal install ghc-mod
-# to plot graphics
-brew cask install aquaterm
-brew install gnuplot
-cabal install easyplot
 ```
 
-## Example
-Create two files `Main.hs` and `PatternMatching.hs` in `src/main/haskell` and put the following code in it:
+## A Haskell Application
+Both the Haskell application and the test project are best structured using a single `Main.hs` file that does the
+execution of the program using the `main` entry that uses `IO` to do, well, Input and Output :)
 
-__Main.hs__:
+The `src/main/haskell/Main.hs` must be structured as follows:
+
+- Put all your functions in modules like for example the module `Chapter2.BabyFirstFunctions`
+- Import the module in `src/main/haskell/Main.hs`
+- Execute your program in main :: IO ()
+
+## A Haskell Test Project
+As stated above, both the Haskell application and the test project are best structured using a single entrypoint, which
+contains the `main` definition that does all IO. For testing the same structure applies, but now with the following structure:
+
+- Put all your tests that will test a certain module in a <ModuleName>Test module like eg. `Chapter2.BabyFirstFunctionsTest`,
+- The `Chapter2.BabyFirstFunctionsTest` will test the module `Chapter2.BabyFirstFunctions` so it will contain a lot of tests,
+- All these tests should be named (Labeled) and grouped together, by convention you can use the name `tests` to group all these small tests
+  as can be seen in `Chapter2.BabyFirstFunctionsTest`  for example:
 
 ```haskell
-module Main where
-import Data.Monoid
-import PatternMatching
-
-doubleMe :: Num a => a -> a
-doubleMe x = x + x
-
-doubleSmallNumber :: (Ord a, Num a) => a -> a
-doubleSmallNumber x = if x > 100 then x else doubleMe x
-
-concat' :: (Enum a, Num a) => [a] -> [a] -> [a]
-concat' xs ys = xs `Data.Monoid.mappend` ys
-
-length' :: (Enum a, Num a) => [a] -> a
-length' xs = sum [1 | _ <- xs]
-
-doubled :: (Enum a, Num a) => a -> [a]
-doubled n = [x*2 | x <- [1..n]]
-
--- output
-echo :: String -> String -> IO ()
-echo msg_one msg_two = putStrLn $ msg_one `Data.Monoid.mappend` msg_two
-
-triangles :: (Eq a, Enum a, Num a) => a -> [(a, a, a)]
-triangles n = [(a, b, c) | a <- [1..10], b <- [1..10], c <- [1..10], a^2 + b^2 == c^2, a + b + c == n]
-
-main :: IO ()
-main = do
-       echo "doubleMeeeee 5: " $ show $ doubleMe 5
-       echo "doubleSmallNumber 100: " $ show $ doubleSmallNumber 100
-       echo "doubleSmallNumber 101: " $ show $ doubleSmallNumber 101
-       echo "concat' [1,2] [3,4]: " $ show $ concat' [1,2] [3,4]
-       echo "length' [1,2,3]: " $ show $ length' [1,2,3]
-       echo "doubled 20: " $ show $ doubled 20
-       echo "fst (8, 11): " $ show $ fst (8,11)
-       echo "snd (8, 11): " $ show $ snd (8,11)
-       echo "zip [1..3] [\"One\",\"Two\",\"Three\"]: " $ show $ zip [1..] ["One", "Two", "Three"]
-       echo "unzip [(1,\"One\"), (2, \"Two\"), (3, \"Three\")]: " $ show $ unzip [(1,"One"), (2, "Two"), (3, "Three")]
-       echo "triangles: " $ show $ triangles 24
-       echo "lucky 7: " $ lucky 7
-       echo "lucky 5: " $ lucky 5
-       echo "factorial 5: " $ show $ factorial 5
-       echo "charName 'a'  " $ charName 'a'
-       echo "charName 'b'  " $ charName 'b'
-       echo "charName 'c'  " $ charName 'c'
-       echo "charName 'h'  " $ charName 'h'
-       echo "addTuples [(1,2), (3,4)]: " $ show $ addTuples [(1,2), (3,4)]
-       echo "head' [1,2,3]: " $ show $ head' [1,2,3]
-       echo "head' \"hello\": " $ show $ head' "hello"
+tests = TestList [TestLabel "test1" test1]
 ```
 
-__PatternMatching.hs__:
-
-```haskell
--- see: http://learnyouahaskell.com/syntax-in-functions#pattern-matching
-
-module PatternMatching where
-import Data.Monoid
-
-lucky :: (Integral a) => a -> String
-lucky 7 = "Lucky number seven!"
-lucky x = "Sorry, you're out of luck pal!"
-
-factorial :: (Integral a) => a -> a
-factorial 0 = 1
-factorial n = n * factorial (n - 1)
-
-charName :: Char -> String
-charName 'a' = "Albert"
-charName 'b' = "Broseph"
-charName 'c' = "Cecil"
-charName char = "Unexpected input " `Data.Monoid.mappend` show char
-
-addTuples :: (Enum a, Num a) => [(a, a)] -> [a]
-addTuples xs = [a + b | (a, b) <- xs]
-
--- returns the head of a list
-head' :: (Enum a) => [a] -> a
-head' [] = error "Can't call head on an empty list"
-head' (x : _) = x
-```
+- Import the test module in `src/test/haskell/Main.hs`
+- The module `src/test/haskell/Main.hs` is actually your test suite
+- The module `src/test/haskell/Main.hs` will call all the grouped `tests` from all the test modules like `Chapter2.BabyFirstFunctionsTest`
+- The module `src/test/haskell/Main.hs` will execute all the grouped tests and will output the results on the console
+- The module `src/test/haskell/Main.hs` will be executed when you call `sbt test`
 
 ## Releases
+- v0.0.8 (2016-12-13)
+  - Separating test sources and the main application by defining an `application` build-run cycle and a `test` build-run cycle.
+  - Put your application code in `src/main/haskell`
+  - Put your test code in `src/test/haskell`
+  - Structure your Haskell application using `/src/main/haskell/Main.hs` that defines main :: IO and put your functions and definitions in modules
+  - Put your tests in modules, group them in that `<ModuleName>Test.hs` __test-module__ and import this test-module in `src/test/haskell/Main.hs`
+  - Compile your application by calling `sbt compile`
+  - Run your application by calling `sbt run`
+  - Test your application by calling `sbt test`
+  - The Scala workflow also works
+
 - v0.0.7 (2016-12-11)
   - Cabal integration
 

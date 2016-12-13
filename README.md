@@ -22,7 +22,7 @@ resolvers += Resolver.url(
   url("http://dl.bintray.com/dnvriend/sbt-plugins"))(
   Resolver.ivyStylePatterns)
 
-addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.7")
+addSbtPlugin("com.github.dnvriend" % "sbt-haskell" % "0.0.8")
 ```
 
 __Note:__ Don't forget to add the resolver!
@@ -33,9 +33,23 @@ __Note:__ Don't forget to add the resolver!
 - Put your files in `src/main/haskell`
 - Be sure to start out with a `Main.hs` file
 - use sbt so launch the sbt console
-- type: `~haskellTest` so it watches source files for triggered execution
-- see the Haskell output on the console
-- Have fun learning Haskell and FP using the workflow/tools you already know; IntelliJ and SBT!
+
+You now have a cloned project, please enter the new directory and you can type:
+
+```bash
+# to test (both Haskell and Scala)
+sbt test
+
+# to compile (both Haskell and Scala)
+sbt compile
+
+# to run (both Haskell and Scala)
+sbt run
+```
+
+Please put Haskell test files in `src/test/haskell` and Haskell source files in `src/main/haskell`.
+
+Have fun learning Haskell and FP using the workflow/tools you already know; IntelliJ and SBT!
 
 ## Available settings
 The available settings are:

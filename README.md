@@ -1,6 +1,9 @@
 # sbt-haskell
 A very simple sbt plugin for compiling and running haskell programs using sbt.
 
+[ ![Download](https://api.bintray.com/packages/dnvriend/sbt-plugins/sbt-haskell/images/download.svg) ](https://bintray.com/dnvriend/sbt-plugins/sbt-haskell/_latestVersion)
+[![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
+
 ## Introduction
 I want to learn Haskell the language and am not (yet) interested in the Haskell build infrastructure. As I know
 Sbt and Scala (a little) I have created this very simple plugin that watches Haskell source files put in

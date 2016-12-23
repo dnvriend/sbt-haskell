@@ -18,6 +18,10 @@ which gives your syntax highlighting and more really feels familiar.
 
 To recap, this plugin is for studying purposes only and to have a familiar workflow.
 
+## Haskell for Mac
+An even more friendly IDE is [Haskell for Mac](http://haskellformac.com/). It is not free ($25) and only available on the
+apple store but well worth it! I have a copy. It also contains a very good [tutorial](http://learn.hfm.io/).
+
 ## Install
 You should use sbt v0.13.13 or higher and put the following in your `plugins.sbt` file:
 
